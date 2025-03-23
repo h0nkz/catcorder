@@ -1,0 +1,5 @@
+Stuff I had to do to make it work:
+- Run sudo upgrade libcamera
+- Add dtoverlay=ov5647 and camera_auto_detect=0 to /boot/firmware/config.txt (this made rasp desktop stop working??
+- uninstall realvnc-vnc-server to be able to upgrade system
+- reinstall realvnc-vnc-server to be able to use rasp desktop

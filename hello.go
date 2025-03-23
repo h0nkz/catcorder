@@ -3,97 +3,64 @@
 package main
 
 import (
+	"context"
 	"flag"
-	"log"
-	"os"
-	"time"
 	"fmt"
+	"log"
+	"mime/multipart"
+	"net/http"
+	"net/textproto"
 
-	"github.com/thinkski/go-v4l2"
+	"github.com/vladimirvivien/go4vl/device"
+	"github.com/vladimirvivien/go4vl/v4l2"
 )
 
-var flagBitrate int
-var flagHeight int
-var flagWidth int
-var flagOutput string
+var (
+	frames <-chan []byte
+)
 
-func init() {
-	const (
-		defaultBitrate = 3000000
-		defaultHeight  = 720
-		defaultWidth   = 1280
-		defaultOutput  = ""
-	)
-	flag.IntVar(&flagBitrate, "b", defaultBitrate, "Bitrate")
-	flag.IntVar(&flagHeight, "h", defaultHeight, "Height")
-	flag.IntVar(&flagWidth, "w", defaultWidth, "Width")
-	flag.StringVar(&flagOutput, "o", defaultOutput, "Output file")
+func imageServ(w http.ResponseWriter, req *http.Request) {
+	mimeWriter := multipart.NewWriter(w)
+	w.Header().Set("Content-Type", fmt.Sprintf("multipart/x-mixed-replace; boundary=%s", mimeWriter.Boundary()))
+	partHeader := make(textproto.MIMEHeader)
+	partHeader.Add("Content-Type", "image/jpeg")
+
+	var frame []byte
+	for frame = range frames {
+		partWriter, err := mimeWriter.CreatePart(partHeader)
+		if err != nil {
+			log.Printf("failed to create multi-part writer: %s", err)
+			return
+		}
+
+		if _, err := partWriter.Write(frame); err != nil {
+			log.Printf("failed to write image: %s", err)
+		}
+	}
 }
 
 func main() {
+	port := ":9090"
+	devName := "/dev/video0"
+	flag.StringVar(&devName, "d", devName, "device name (path)")
+	flag.StringVar(&port, "p", port, "webcam service port")
 
-	fmt.Println("Parsing flags..")
-	flag.Parse()
-
-	fmt.Println("Opening device..")
-	// Open device
-	dev, err := v4l2.Open("/dev/video0")
-	if nil != err {
-		log.Fatal(err)
+	camera, err := device.Open(
+		devName,
+		device.WithPixFormat(v4l2.PixFormat{PixelFormat: v4l2.PixelFmtMJPEG, Width: 640, Height: 480}),
+	)
+	if err != nil {
+		log.Fatalf("failed to open device: %s", err)
 	}
-	defer dev.Close()
+	defer camera.Close()
 
-	fmt.Println("Setting pixel format..")
-	// Set pixel format
-	if err := dev.SetPixelFormat(
-		flagWidth,
-		flagHeight,
-		v4l2.V4L2_PIX_FMT_H264,
-	); nil != err {
-		log.Fatal(err)
+	if err := camera.Start(context.TODO()); err != nil {
+		log.Fatalf("camera start: %s", err)
 	}
 
-	fmt.Println("Setting bitrate..")
-	// Set bitrate
-	if err := dev.SetBitrate(int32(flagBitrate)); nil != err {
-		log.Fatal(err)
-	}
+	frames = camera.GetOutput()
 
-	fmt.Println("Setting new timer..")
-	// Set timer to stop stream after ten seconds
-	timer := time.NewTimer(10 * time.Second)
-
-	fmt.Println("Starting stream..")
-	// Start stream
-	if err := dev.Start(); nil != err {
-		log.Fatal(err)
-	}
-
-	fmt.Println("Opening file for writing..")
-	// Open file for writing
-	f := os.Stdout
-	if flagOutput != "" {
-		var err error
-		if f, err = os.Create(flagOutput); nil != err {
-			log.Fatal(err)
-		}
-	}
-	defer f.Close()
-
-	fmt.Println("Entering ReadLoop")
-ReadLoop:
-	for {
-		select {
-		case b := <-dev.C:
-			f.Write(b.Data)
-			b.Release()
-		case <-timer.C:
-			break ReadLoop
-		}
-	}
-
-	// Stop stream
-	if err := dev.Stop(); nil != err {
-		log.Fatal()
-	}
+	log.Printf("Serving images: [%s/stream]", port)
+	http.HandleFunc("/stream", imageServ)
+	log.Fatal(http.ListenAndServe(port, nil))
 }
