@@ -3,6 +3,7 @@ import socket
 import pickle
 import struct 
 
+
 SERVER_IP_ADDRESS = '192.168.1.62'
 
 client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
