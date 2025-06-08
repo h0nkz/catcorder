@@ -24,9 +24,9 @@ try:
     while True:
 
         frame = picam2.capture_array()
-        frame_bgr = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
+        # frame_bgr = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
 
-        data = pickle.dumps(frame_bgr)
+        data = pickle.dumps(frame) # removed bgr
         message = struct.pack("Q", len(data)) + data 
         client_socket.sendall(message)
 
