@@ -16,4 +16,6 @@ export function pingServer() {
     .withBackoff(new ConstantBackoff(1000))
     .build();
 
+    ws.buffer
+
 }
