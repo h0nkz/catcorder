@@ -28,8 +28,9 @@ import cv from "opencv-ts"
 
 <div>
     <img src={imgUrl} alt="a cat looking into a camera" width=640 height=480>
+    <!-- svelte-ignore a11y_media_has_caption -->
     <video width="640" height="480">
-        <source src="ws://192.168.1.62:8888">
+        <source src="http://192.168.1.62:5000">
     </video>
     
 </div>

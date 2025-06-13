@@ -5,11 +5,13 @@ import threading
 from flask import Flask, Response
 
 app = Flask(__name__)
+
 picam2 = Picamera2()
-camera_config = picam2.create_preview_configuration()
+camera_config = picam2.create_preview_configuration(main={"size": (640, 480)}, buffer_count=8)
 picam2.configure(camera_config)
-picam2.start_preview(Preview.QTGL)
+picam2.start_preview()
 picam2.start()
+
 
 def generate():
     while True:
