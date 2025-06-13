@@ -1,5 +1,7 @@
 <script lang="ts">
     import imgUrl from "../assets/sample-cat.jpg"
+
+    const videoUrl = "http://192.168.1.62:5000/video_feed"
 import cv from "opencv-ts"
     
     
@@ -27,10 +29,7 @@ import cv from "opencv-ts"
 </script>
 
 <div>
-    <img src={imgUrl} alt="a cat looking into a camera" width=640 height=480>
-    <!-- svelte-ignore a11y_media_has_caption -->
-    <video width="640" height="480">
-        <source src="http://192.168.1.62:5000">
-    </video>
+    <img src={videoUrl} alt="a cat looking into a camera" width=640 height=480>
+   
     
 </div>
