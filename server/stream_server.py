@@ -1,12 +1,14 @@
 import io 
 import time
-import picamera2
+from picamera2 import Picamera2, Preview
 import threading
 from flask import Flask, Response
 
 app = Flask(__name__)
-picam2 = picamera2.Picamera2()
-picam2.configure(picamera2.preview_configuration['preview'])
+picam2 = Picamera2()
+camera_config = picam2.create_preview_configuration()
+picam2.configure(camera_config)
+picam2.start_preview(Preview.QTGL)
 picam2.start()
 
 def generate():
